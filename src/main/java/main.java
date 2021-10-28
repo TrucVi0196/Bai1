@@ -1,36 +1,42 @@
+package com.example;
+
 import java.io.*;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class main {
     private static final String COMMA_DELIMITER = ",";
     private static final String NEW_LINE_SEPARATOR = "\n";
-
     public static void main(String[] args) throws IOException {
 
         // 1. Đọc danh sách sinh viên từ tập tin data.csv được cung cấp
 
         List<SinhVien> sv = processInputFile("C:\\Users\\vi.le_onemount\\Documents\\QLSV\\src\\data.txt");
         //2. Liệt kê danh sách 10 sinh viên có điểm thi lý thuyết cao nhất
-        List<SinhVien> svCaodiem = (sv.stream().sorted(Comparator.comparing(SinhVien::getlT).reversed()).collect(Collectors.toList()));
+        List<SinhVien> svCaodiem = (sv.stream()
+                .sorted(Comparator.comparing(SinhVien::getlT).reversed())
+                .collect(Collectors.toList()));
         print10(svCaodiem);
 
         //3. Tính điểm tổng kết cho từng sinh viên theo công thức: bonus 10%,
         //report 30%, app 15%, lý thuyết 45%; điểm tổng kết được làm tròn đến
         //0.5 (ví dụ: 7.37 -> 7.5, 6.2 -> 6.0)
-        sv = sv.stream().map(x -> tinhTongDiem(x)).collect(Collectors.toList());
-        print10(sv.stream().sorted(Comparator.comparing(SinhVien::getDiemTongKet).reversed()).collect(Collectors.toList()));
-        writeCsvFile(sv, "C:\\Users\\vi.le_onemount\\Documents\\QLSV\\src\\out.csv");
+        sv = sv.stream().map(main::tinhTongDiem).collect(Collectors.toList());
+        print10(sv.stream()
+                .sorted(Comparator.comparing(SinhVien::getDiemTongKet).reversed())
+                .collect(Collectors.toList()));
+        writeCsvFile(sv,"C:\\Users\\vi.le_onemount\\Documents\\QLSV\\src\\out.csv");
+        sv = sv.stream().filter(main::validateMail).collect(Collectors.toList());
+        sv.stream().forEach(System.out::println);
+
 
 
     }
-
-    private static void writeCsvFile(List<SinhVien> sv, String fileName) {
+    private  static  void writeCsvFile(List<SinhVien> sv , String fileName){
         FileWriter fileWriter = null;
 
         try {
@@ -78,46 +84,50 @@ public class main {
         }
     }
 
-    private static void print10(List<SinhVien> sv) {
-        int nu = 10;
-        if (sv.size() < nu)
-            nu = sv.size();
-        for (int i = 0; i < nu; i++) {
+    private  static void print10(List<SinhVien> sv){
+        int nu =10;
+        if (sv.size()<nu)
+            nu =sv.size();
+        for (int i=0;i<nu;i++){
             System.out.println(sv.get(i).getName());
         }
     }
 
-    private static SinhVien tinhTongDiem(SinhVien sv) {
+    private static boolean validateMail(SinhVien sv){
+        Pattern VALID_EMAIL_ADDRESS_REGEX =
+                Pattern.compile("^[a-z0-9](\\.?[a-z0-9]){5,}@g(oogle)?mail\\.com$", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(sv.getEmail());
+        return matcher.find();
+    }
+    private static SinhVien tinhTongDiem(SinhVien sv){
 
 
         // different locale - GERMAN
 
-        double diem = sv.getBonus() * 0.1 + sv.getReport() * 0.3 + sv.getApp() * 0.15 + sv.getlT() * 0.45;
+        double diem = sv.getBonus()*0.1+sv.getReport()*0.3+sv.getApp()*0.15+sv.getlT()*0.45;
         sv.setDiemTongKet(diem);
         return sv;
     }
-
     private static List<SinhVien> processInputFile(String inputFilePath) throws IOException {
 
-        List<SinhVien> inputList = new ArrayList<SinhVien>();
+        List<SinhVien> inputList = new ArrayList<>();
 
-        try {
+        try{
 
             File inputF = new File(inputFilePath);
             InputStream inputFS = new FileInputStream(inputF);
             BufferedReader br = new BufferedReader(new InputStreamReader(inputFS));
 
             // skip the header of the csv
-            inputList = br.lines().skip(1).map(x -> mapToSinhVien(x)).collect(Collectors.toList());
+            inputList = br.lines().skip(1).map(x ->mapToSinhVien(x)).collect(Collectors.toList());
             br.close();
         } catch (IOException e) {
-            throw e;
+            throw  e;
         }
 
-        return inputList;
+        return inputList ;
     }
-
-    private static SinhVien mapToSinhVien(String line) {
+    private static SinhVien mapToSinhVien(String line){
         String[] p = line.split(",");
         SinhVien sv = new SinhVien();
         sv.setiD(Long.parseLong(p[0]));
@@ -130,9 +140,8 @@ public class main {
         return sv;
     }
 }
-
 //D,Name,Email,Bonus,Report,App,LT
-class SinhVien {
+class SinhVien{
     private Long iD;
     private String name;
     private String email;
